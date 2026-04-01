@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Social (โพสต์ โหวต คอมเมนต์)</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e9eaef; /* สีพื้นหลังสไตล์โซเชียล */
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px; /* ความกว้างของหน้าฟีด */
+        }
+
+        /* กล่องสำหรับสร้างโพสต์ */
+        .create-post-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+            font-size: 16px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background-color: #1877f2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        button:hover { background-color: #166fe5; }
+        
+        /* สไตล์ของแต่ละโพสต์ */
+        .post-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+
+        .post-text {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #1c1e21;
+        }
+
+        /* แถบเครื่องมือ โหวต/คะแนน */
+        .action-bar {
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+            margin-bottom: 15px;
+            gap: 15px;
+        }
+
+        .vote-btn {
+            background-color: #f0f2f5;
+            color: #606770;
+            font-size: 18px;
+            padding: 5px 10px;
+        }
+
+        .vote-btn:hover { background-color: #e4e6eb; }
+        .score { font-weight: bold; color: #ff4500; font-size: 18px; }
+
+        /* ส่วนของคอมเมนต์ */
+        .comment-section {
+            background-color: #f0f2f5;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .comment-item {
+            background-color: white;
+            padding: 10px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+        }
+
+        .add-comment {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .add-comment input {
+            flex-grow: 1;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Mini Social Feed</h2>
+        
+        <div class="create-post-box">
+            <textarea id="newPostText" placeholder="คุณกำลังคิดอะไรอยู่?"></textarea>
+            <button onclick="createPost()">โพสต์เลย</button>
+        </div>
+
+        <div id="feed"></div>
+    </div>
+
+    <script>
+        // ฐานข้อมูลจำลอง (เก็บเป็น Array)
+        let posts = [
+            {
+                id: 1, // รหัสโพสต์
+                text: "สวัสดี! นี่คือโพสต์แรกของระบบ ลองกดโหวต หรือพิมพ์คอมเมนต์ดูสิ 🚀",
+                score: 5, // คะแนนโหวต (แบบ Reddit)
+                comments: ["เจ๋งมากครับ!", "ตามมาจาก VS Code เลย"] // รายการคอมเมนต์
+            }
+        ];
+
+        // ฟังก์ชันสำหรับแสดงผลโพสต์ทั้งหมดลงในหน้าเว็บ
+        function renderFeed() {
+            let feedDiv = document.getElementById("feed");
+            feedDiv.innerHTML = ""; // ล้างข้อมูลเก่าบนหน้าจอก่อน
+
+            // วนลูปเอาข้อมูลโพสต์แต่ละอันมาสร้างเป็น HTML
+            posts.forEach(post => {
+                
+                // สร้าง HTML สำหรับรายการคอมเมนต์
+                let commentsHtml = "";
+                post.comments.forEach(comment => {
+                    commentsHtml += `<div class="comment-item">${comment}</div>`;
+                });
+
+                // สร้าง HTML ของตัวโพสต์ทั้งหมด
+                let postHtml = `
+                    <div class="post-card">
+                        <div class="post-text">${post.text}</div>
+                        
+                        <div class="action-bar">
+                            <button class="vote-btn" onclick="vote(${post.id}, 1)">👍 (Upvote)</button>
+                            <span class="score">${post.score}</span>
+                            <button class="vote-btn" onclick="vote(${post.id}, -1)">👎 (Downvote)</button>
+                        </div>
+
+                        <div class="comment-section">
+                            <div id="comments-list-${post.id}">
+                                ${commentsHtml}
+                            </div>
+                            <div class="add-comment">
+                                <input type="text" id="commentInput-${post.id}" placeholder="เขียนคอมเมนต์...">
+                                <button onclick="addComment(${post.id})">ส่ง</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // เอา HTML ที่สร้างเสร็จไปแปะในหน้าเว็บ
+                feedDiv.innerHTML += postHtml;
+            });
+        }
+
+        // ฟังก์ชัน: สร้างโพสต์ใหม่
+        function createPost() {
+            let textInput = document.getElementById("newPostText");
+            let text = textInput.value.trim();
+
+            if (text !== "") {
+                // สร้างข้อมูลโพสต์ใหม่
+                let newPost = {
+                    id: Date.now(), // ใช้เวลาปัจจุบันสร้างไอดีแบบไม่ซ้ำ
+                    text: text,
+                    score: 0,
+                    comments: []
+                };
+                
+                posts.unshift(newPost); // เอาโพสต์ใหม่ไปต่อต้านบนสุดของ Array (เหมือนฟีดใหม่ล่าสุด)
+                textInput.value = ""; // ล้างช่องพิมพ์
+                renderFeed(); // รีเฟรชหน้าจอใหม่
+            } else {
+                alert("กรุณาพิมพ์ข้อความก่อนโพสต์ครับ");
+            }
+        }
+
+        // ฟังก์ชัน: โหวต (บวกหรือลบคะแนน)
+        function vote(postId, change) {
+            // หาโพสต์ที่มีไอดีตรงกัน
+            let post = posts.find(p => p.id === postId);
+            if (post) {
+                post.score += change; // บวกหรือลบคะแนน
+                renderFeed(); // รีเฟรชหน้าจอใหม่เพื่ออัปเดตตัวเลข
+            }
+        }
+
+        // ฟังก์ชัน: เพิ่มคอมเมนต์
+        function addComment(postId) {
+            let inputField = document.getElementById(`commentInput-${postId}`);
+            let commentText = inputField.value.trim();
+
+            if (commentText !== "") {
+                // หาโพสต์ที่มีไอดีตรงกัน แล้วยัดคอมเมนต์ลงไปใน Array
+                let post = posts.find(p => p.id === postId);
+                if (post) {
+                    post.comments.push(commentText);
+                    renderFeed(); // รีเฟรชหน้าจอใหม่เพื่อแสดงคอมเมนต์ใหม่
+                }
+            }
+        }
+
+        // สั่งให้ทำงานครั้งแรกเมื่อเปิดหน้าเว็บ
+        renderFeed();
+    </script>
+</body>
+</html>
